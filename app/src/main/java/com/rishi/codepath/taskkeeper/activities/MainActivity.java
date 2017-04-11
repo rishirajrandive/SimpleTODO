@@ -13,11 +13,12 @@ import android.widget.ListView;
 
 import com.rishi.codepath.taskkeeper.R;
 import com.rishi.codepath.taskkeeper.adapter.ItemAdapter;
+import com.rishi.codepath.taskkeeper.db.TaskDbHelper;
 import com.rishi.codepath.taskkeeper.fragments.FilterTaskDialog;
+import com.rishi.codepath.taskkeeper.fragments.RetainedFragment;
 import com.rishi.codepath.taskkeeper.fragments.TaskDetailDialog;
 import com.rishi.codepath.taskkeeper.interfaces.ITaskListUpdateListener;
 import com.rishi.codepath.taskkeeper.model.Task;
-import com.rishi.codepath.taskkeeper.db.TaskDbHelper;
 
 import java.util.ArrayList;
 
@@ -27,10 +28,12 @@ import java.util.ArrayList;
  */
 public class MainActivity extends AppCompatActivity implements ITaskListUpdateListener {
 
+    private static final String TAG_RETAINED_FRAGMENT = "RetainedFragment";
     private ArrayList<Task> mItems;
     private ItemAdapter mItemsAdapter;
     private ListView mLvItems;
     private TaskDbHelper mTaskDbHelper;
+    private RetainedFragment mRetainedFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +42,22 @@ public class MainActivity extends AppCompatActivity implements ITaskListUpdateLi
         mLvItems = (ListView) findViewById(R.id.list_items);
         mTaskDbHelper = TaskDbHelper.getInstance(this);
         mTaskDbHelper.setTaskListUpdateListener(this);
-        getTaskList();
+
+        FragmentManager fm = getSupportFragmentManager();
+        mRetainedFragment = (RetainedFragment) fm.findFragmentByTag(TAG_RETAINED_FRAGMENT);
+
+        // create the fragment and data the first time
+        if (mRetainedFragment == null) {
+            // add the fragment
+            mRetainedFragment = new RetainedFragment();
+            fm.beginTransaction().add(mRetainedFragment, TAG_RETAINED_FRAGMENT).commit();
+            // load data from a data source or perform any calculation
+            getTaskList();
+            mRetainedFragment.setData(mItems);
+        }else {
+            fetchTasks();
+            mItems = mRetainedFragment.getData();
+        }
     }
 
     @Override
